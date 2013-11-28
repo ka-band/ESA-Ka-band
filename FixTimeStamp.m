@@ -13,6 +13,7 @@ if ~isempty(strfind(fna,'_WXT')) %WXTdata, assume in correct directory
             disp(['Error opening file ', fn,', message: ', message])
         end
         Cfl = fscanf(fid, form,2); %Start
+        
         fseek(fid, -130, 'eof');
         Cf = fscanf(fid, form);%End
         k=strfind(Cf,'2013');
@@ -35,23 +36,26 @@ if ~isempty(strfind(fna,'_WXT')) %WXTdata, assume in correct directory
         mis=Cfl(15:16);
         ss = Cfl(18:19);
         %End
-        ye = Cf2(1:4);
-        me=Cf2(6:7);
-        de=Cf2(9:10);
-        he= Cf2(11:12);
-        mie=Cf2(14:15);
-        se = Cf2(17:18);
-        fnn = ['y',ys,'m',ms,'d',ds,'h',hs,'m',mis,'s',ss,'y',ye,'m',me,'d',de,'h',he,'m',mie,'s',se,' ',fn];
-        if ~exist(fnn,'file')
-            [st] = copyfile(fn,fnn);
-            if st ~= 1
-                disp(['Error copying weatherfile ', fn,' to ', fnn])
-                stop
-            else
-                disp(['Copying weatherfile ', fn,' to ', fnn])
+        if ~isempty(Cf2)
+            ye = Cf2(1:4);
+            me=Cf2(6:7);
+            de=Cf2(9:10);
+            he= Cf2(11:12);
+            mie=Cf2(14:15);
+            se = Cf2(17:18);
+            fnn = ['y',ys,'m',ms,'d',ds,'h',hs,'m',mis,'s',ss,'y',ye,'m',me,'d',de,'h',he,'m',mie,'s',se,' ',fn];
+            if ~exist(fnn,'file')
+                [st] = copyfile(fn,fnn);
+                if st ~= 1
+                    disp(['Error copying weatherfile ', fn,' to ', fnn])
+                    stop
+                else
+                    disp(['Copying weatherfile ', fn,' to ', fnn])
+                end
             end
+        else
+            disp(['Empty file ',fn])
         end
-        
     end
     
 elseif ~isempty(strfind(fna,'_TB'))%Tipping bucket data, assume in correct directory
@@ -77,27 +81,31 @@ elseif ~isempty(strfind(fna,'_TB'))%Tipping bucket data, assume in correct direc
         if strcmp(Cf,'') %Only one line
             Cf = Cfl;
         end
-        %Identify last number to find endtime and enddate
-        ip=strfind(Cf,',');
-        Cf2 = Cf(ip(end)+1:length(Cf));
         st = fclose(fid);
         if st ~= 0
             disp(['Error closing file ', fn])
         end
-        secs = str2num(Cf2)/1000;
-        %Find end time
-        tstart=datenum([ys,'-',ms,'-',ds,'-',hs,'-',mis,'-',ss],'yyyy-mm-dd-HH-MM-SS');
-        tend = tstart+secs/24/3600;
-        Tend = datestr(tend,'yyyy-mm-dd-HH-MM-SS');
-        fnn = ['y',ys,'m',ms,'d',ds,'h',hs,'m',mis,'s',ss,'y',Tend,' ',fn];
-        if ~exist(fnn,'file')
-            [st] = copyfile(fn,fnn);
-            if st ~= 1
-                disp(['Error copying weatherfile ', fn,' to ', fnn])
-                stop
-            else
-                disp(['Copying weatherfile ', fn,' to ', fnn])
+        %Identify last number to find endtime and enddate
+        ip=strfind(Cf,',');
+        if ~isempty(ip)
+            Cf2 = Cf(ip(end)+1:length(Cf));
+            secs = str2num(Cf2)/1000;
+            %Find end time
+            tstart=datenum([ys,'-',ms,'-',ds,'-',hs,'-',mis,'-',ss],'yyyy-mm-dd-HH-MM-SS');
+            tend = tstart+secs/24/3600;
+            Tend = datestr(tend,'yyyy-mm-dd-HH-MM-SS');
+            fnn = ['y',ys,'m',ms,'d',ds,'h',hs,'m',mis,'s',ss,'y',Tend,' ',fn];
+            if ~exist(fnn,'file')
+                [st] = copyfile(fn,fnn);
+                if st ~= 1
+                    disp(['Error copying weatherfile ', fn,' to ', fnn])
+                    stop
+                else
+                    disp(['Copying weatherfile ', fn,' to ', fnn])
+                end
             end
+        else
+            disp(['Empty file ',fn])
         end
     end
 end

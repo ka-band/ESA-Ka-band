@@ -21,28 +21,29 @@ close all
 clear all
 format long e
 
+addpath c:\Prosjekter\Satellitt\Beacon\ESA-Ka-band\
 
 %Parameters
 YYYY_start = '2013'; %Year start
 MM_Start = '10'; %Month start
-DD_Start = '01'; %Day start
+DD_Start = '04'; %Day start
 YYYY_end = '2013';%Year end
 MM_End = '10'; %Month end
-DD_End = '12'; %Day end
+DD_End = '15'; %Day end
 TrackThreshold = 3; %dB carrrier above noise threshold for Track
-F_threshold = 1000;% Hz idf carrier freq changes more than this compared to last freq out of synch is decleared (Track = 0)
+F_threshold = 5;% Hz idf carrier freq changes more than this compared to last freq out of synch is decleared (Track = 0)
 
-location = 'Eggemoen';
+% location = 'Eggemoen';
 receiver='EXA';
 %location = 'Vadsø';
-%location = 'Nittedal';
+location = 'Nittedal';
 %location = 'Røst';
-%location = 'Svalbard';
+%location = 'Isfjord';
 %location = 'Kjeller'
 
-proc_beacon = 'yes'; %Analayze (preprocess) beacon only
+proc_beacon = 'no'; %Analayze (preprocess) beacon only
 proc_weather = 'yes'; %Analyse (preprocess) weather only
-fix_weather_dates='no'; %Add timestamp to filenames and copy the original files to new ones
+fix_weather_dates='yes'; %Add timestamp to filenames and copy the original files to new ones
 
 pl_temp = 'no';%Plot data during reading of files (beacon)
 verbose = 'no'; %Plot beacontime series uring reading
@@ -66,7 +67,7 @@ elseif strcmp(location,'Eggemoen')
     DataDirSpectrum = 'C:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 192.168.1.10\Signal';
     DataDirWeatherWXT = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 192.168.1.10\WXT';
     DataDirWeatherTB = 'C:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 192.168.1.10\TB';
-    PlotDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Eggemoen';
+    PlotDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Eggemoen\DayPlots';
     ResDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Eggemoen\ProcessedData';
 elseif strcmp(location,'Vadsø')
     DataDirBeacon = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 192.168.3.10\Beacon';
@@ -76,11 +77,21 @@ elseif strcmp(location,'Vadsø')
     PlotDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Vadsø\Dayplots';
     ResDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Vadsø\ProcessedData';
 elseif strcmp(location,'Nittedal')
-    stop
+     DataDirBeacon = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.62.13\Beacon';
+    DataDirSpectrum = 'C:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.62.13\Signal';
+    DataDirWeatherWXT = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.62.13\WXT';
+    DataDirWeatherTB = 'C:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.62.13\TB';
+    PlotDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Nittedal\Dayplots';
+    ResDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Nittedal\ProcessedData';
 elseif strcmp(location,'Røst')
     stop
-elseif strcmp(location,'Svalbard')
-    stop
+elseif strcmp(location,'Isfjord')
+     DataDirBeacon = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.249.17\Beacon';
+    DataDirSpectrum = 'C:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.249.17\Signal';
+    DataDirWeatherWXT = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.249.17\WXT';
+    DataDirWeatherTB = 'C:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Server 10.47.249.17\TB';
+    PlotDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Isfjord\Dayplots';
+    ResDir = 'c:\Prosjekter\Satellitt\Beacon\Målinger\ESA\Isfjord\ProcessedData';
 else
     disp('Loacation not defined')
     stop
@@ -144,7 +155,7 @@ for daycount = 0 : numberofdays - 1 %Traverse the days
         ipW = find(((AW(:,1) >= TargetStart) & (AW(:,2) <= TargetEnd)) ...
             | ((AW(:,1) < TargetStart) & (AW(:,2) > TargetStart)) ...
             | ((AW(:,2) > TargetEnd) & (AW(:,1) < TargetEnd))); %WXT520
-        
+if ~isempty(ATB)        
             ipTB = find(((ATB(:,1) >= TargetStart) & (ATB(:,2) <= TargetEnd)) ...
                 | ((ATB(:,1) < TargetStart) & (ATB(:,2) > TargetStart)) ...
                 | ((ATB(:,2) > TargetEnd) & (ATB(:,1) < TargetEnd))); %TB
@@ -153,7 +164,10 @@ for daycount = 0 : numberofdays - 1 %Traverse the days
             else
                 disp(['No TB weather files for day ',datestr(TargetStart)])
             end
-        
+else
+    ipTB=[];
+    disp('No TB data available')
+end
         if ~isempty(ipW)
             disp(['Load ',num2str(length(ipW)), ' WXT520 weather file(s) for day ',datestr(TargetStart)])
         else
@@ -452,7 +466,7 @@ for daycount = 0 : numberofdays - 1 %Traverse the days
         end
         
         [BeaconSignal, BeaconSpectrum] = ...
-            Load_BeaconFiles(D,Dspec, ip, ips, A, As, TargetStart, TargetEnd, pl_temp, TrackThreshold, F_threshold, location, verbose, receiver, DataDirBeacon, DataDirSpectrum);
+            Load_BeaconFiles_simple(D,Dspec, ip, ips, A, As, TargetStart, TargetEnd, pl_temp, TrackThreshold, F_threshold, location, verbose, receiver, DataDirBeacon, DataDirSpectrum);
 
         if strcmp(pl_ts,'yes') && ~isempty(ip)
             if ~strcmp(location,'Kjeller')
@@ -518,6 +532,9 @@ for daycount = 0 : numberofdays - 1 %Traverse the days
                 ylabel('Freq (Hz)')
                 datetick('x')%,'HH:MM:SS')
                 grid on
+                
+                
+                
             end
             if strcmp(saveplot,'yes')
                 drawnow
@@ -527,6 +544,29 @@ for daycount = 0 : numberofdays - 1 %Traverse the days
                 cd(PlotDir)
                 fn = ['Beacon_Noise_',datestr(TargetStart,'yy-mm-dd')];
                 saveas(k,[fn,'.fig'],'fig')
+                
+                %start beacononly
+                
+                k2=figure;
+                
+                plot(BeaconSignal.Timestamp,BeaconSignal.Carrier)
+                ipT = find(BeaconSignal.Track < 1);
+                if ~isempty(ipT)
+                    hold on
+                    plot(BeaconSignal.Timestamp(ipT),BeaconSignal.Carrier(ipT),'ro')
+                end
+                if ~isempty(BeaconSignal.Invalid)
+                    hold on
+                    plot(BeaconSignal.Timestamp(BeaconSignal.Invalid),BeaconSignal.Carrier(BeaconSignal.Invalid),'r.')
+                end
+                ylabel('Beacon level (dBm)')
+                
+                datetick('x')%,'HH:MM:SS')
+                grid on
+                  
+                %%% end beacon only
+                fn2 = ['Beacon_',datestr(TargetStart,'yy-mm-dd')];
+                saveas(k2,[fn2,'.fig'],'fig')
 %                 print(k,'-depsc','-tiff','-r300',[fn,'.eps']) %Eps with tiff preview
 %                 print(k,'-djpeg90',[fn,'.jpg']) %jpeg
                 %close(k)
