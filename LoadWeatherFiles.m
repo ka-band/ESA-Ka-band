@@ -5,7 +5,7 @@ function Weather = LoadWeatherFiles(D, ip, A, DPWD, ipPWD, APWD, TargetStart, Ta
 %   D:  Directory content
 %   ip: Indexnumber for files to load
 %   A: Start stop matrix for files
-%   Target start: Start time for request (datenum format)
+   Target start: Start time for request (datenum format)
 %   Target end: end time for request(datenum format)
 %   pl: Plot data ('yes','no')
 %   verbose: Print results to screen? 'yes' or 'no'
